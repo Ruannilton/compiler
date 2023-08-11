@@ -50,6 +50,10 @@ proc nextToken(scanner: var Scanner):Token =
             result.initToken(TokenSlash)
         of '\0':
             result.initToken(TokenEOF)
+        of '{':
+            result.initToken(TokenLeftBrace)
+        of '}':
+            result.initToken(TokenRightBrace)
         of '=':
             let nextc = scanner.nextChar()
             case nextc

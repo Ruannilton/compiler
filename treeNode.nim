@@ -56,7 +56,29 @@ proc printNode(root:TreeNode) =
     printNode(root, space, level)
 
 
+
 proc debugNode(root:TreeNode): string =
+
+    if root.nodeType == GlueStatement:
+        return debugNode(root.left)
+
+    if root.nodeType == CompoundStatement:
+        var lines: seq[string]
+        var current = root.right
+
+        while current != nil:
+            lines.add(&"{debugNode(current.left)}\n")
+            current = current.right
+
+        var ret = "{\n"
+        let l = lines.len() - 1
+        
+        for index in countdown(l,0):
+            ret.add(lines[index])
+
+        ret.add("}")
+        return ret
+
     if root.nodeType == IntValue:
         return &"{root.value}"
 
@@ -68,6 +90,8 @@ proc debugNode(root:TreeNode): string =
 
     let op = opToString[root.nodeType]
 
+    
+  
     return &"({debugNode(root.left)} {op} {debugNode(root.right)})"
 
 proc createNode(nodeType: NodeType, value :int64, left,right: TreeNode):TreeNode =

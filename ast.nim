@@ -5,6 +5,11 @@ import treeNode
 import symbolTable
 import std/strformat
 
+
+
+
+proc compoundStatement(queue: var TokenQueue): TreeNode
+
 proc parseExpression(queue: var TokenQueue, precedence: int64 = 0): TreeNode =  
     
     let tk = queue.dequeue()
@@ -73,8 +78,10 @@ proc parseStatement(queue: var TokenQueue): TreeNode =
 
     let tkType = tk.getType();
 
+    if tkType == TokenLeftBrace:
+        return compoundStatement(queue)
 
-    if isDeclaration(tkType):
+    elif isDeclaration(tkType):
         let decl = parseDeclaration(queue)
         result = decl
         discard queue.dequeue() # discard semicolon
@@ -85,6 +92,31 @@ proc parseStatement(queue: var TokenQueue): TreeNode =
     
     else:
         raise newException(OSError, "wrong program")
+
+proc compoundStatement(queue: var TokenQueue): TreeNode = 
+    discard queue.dequeue() # skip {
+    
+    var lastNode: TreeNode = nil
+    var tmp: TreeNode
+    var tkType = queue.peak().getType()
+    
+    while tkType != TokenRightBrace:
+        
+        if tkType == TokenEOF:
+            raise newException(OSError, "Missing }")
+
+        if tkType == TokenLeftBrace:
+            tmp = compoundStatement(queue)
+        else:
+            tmp = parseStatement(queue)
+        
+        lastNode = createNode(GlueStatement,tmp,lastNode)
+
+        tkType = queue.peak().getType()
+    
+    discard queue.dequeue() # skip }
+
+    return createNode(CompoundStatement,nil,lastNode)
 
 proc syntaxTree(queue: var TokenQueue): seq[TreeNode] =
     var expresions : seq[TreeNode]
