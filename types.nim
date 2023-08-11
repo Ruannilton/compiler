@@ -24,6 +24,10 @@ type TokenType = enum
     TokenLessEquals
     TokenLeftBrace
     TokenRightBrace
+    TokenIf
+    TokenElse
+    TokenLeftParen
+    TokenRightParen
 
 type NodeType = enum
     RootNode,
@@ -41,7 +45,8 @@ type NodeType = enum
     GreaterEqualsOperator,
     LessEqualsOperator,
     CompoundStatement,
-    GlueStatement
+    GlueStatement,
+    IfNode
 
 var mapTokenToNode: Table[TokenType,NodeType] = initTable[TokenType,NodeType]()
 mapTokenToNode[TokenMinus] = SubtractOperator
@@ -73,6 +78,27 @@ opPrecedence[LessOperator] = 40
 opPrecedence[GreaterEqualsOperator] = 40
 opPrecedence[LessEqualsOperator] = 40
 
+proc expressionFinal(tp: TokenType):bool = 
+    return tp in [TokenSemiColonKeyword,TokenLeftParen,TokenRightParen]
+
+proc expressionToken(tp: TokenType):bool = 
+    return tp in [
+    TokenMinus,
+    TokenPlus,
+    TokenStar,
+    TokenSlash,
+    TokenIntValue,
+    TokenIdentifier,
+    TokenTrueKeyword,
+    TokenFalseKeyword,
+    TokenEquals,
+    TokenNotEquals,
+    TokenGreater,
+    TokenLess,
+    TokenGreaterEquals,
+    TokenLessEquals,
+    ]
+
 proc tokenToNode(tp: TokenType):NodeType =
     if mapTokenToNode.hasKey(tp):
         return mapTokenToNode[tp]
@@ -91,4 +117,4 @@ proc getPrecedence(op: TokenType):int64 =  getPrecedence(tokenToNode(op))
 proc isDeclaration(op: TokenType): bool =
     return op in [ TokenIntKeyword, TokenStringKeyword, TokenBoolKeyword]
 
-export TokenType,NodeType,tokenToNode,getPrecedence,isDeclaration
+export TokenType,NodeType,tokenToNode,getPrecedence,isDeclaration,expressionFinal,expressionToken

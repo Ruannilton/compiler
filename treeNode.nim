@@ -8,7 +8,7 @@ var nodeCounter : int64 = 0
 
 type TreeNode = ref object
     nodeId: int64
-    left, right : TreeNode
+    left, right,mid : TreeNode
     nodeType : NodeType
     value: int64
     id: int64
@@ -27,7 +27,6 @@ opToString[GreaterEqualsOperator] = ">="
 opToString[LessEqualsOperator] = "<="
 opToString[GreaterOperator] = ">"
 opToString[LessOperator] = "<"
-
 
 
 proc debugNode(root:TreeNode): string =
@@ -67,12 +66,13 @@ proc debugNode(root:TreeNode): string =
   
     return &"({debugNode(root.left)} {op} {debugNode(root.right)})"
 
-proc createNode(nodeType: NodeType, value :int64, left,right: TreeNode):TreeNode =
+proc createNode(nodeType: NodeType, value :int64, left,right: TreeNode, mid: TreeNode = nil):TreeNode =
     var tmp: TreeNode = new(TreeNode)
     tmp.nodeType = nodeType
     tmp.value = value
     tmp.left = left
     tmp.right = right
+    tmp.mid = mid
     tmp.nodeId = nodeCounter
     nodeCounter = nodeCounter + 1
     return tmp
@@ -83,6 +83,7 @@ proc createNode(nodeType: NodeType, identifier :string, left,right: TreeNode):Tr
     tmp.id = getSymbolId(identifier)
     tmp.left = left
     tmp.right = right
+    tmp.mid = nil
     tmp.nodeId = nodeCounter
     nodeCounter = nodeCounter + 1
     return tmp
@@ -116,6 +117,7 @@ proc generateDot(node: TreeNode, name:string) =
     of IntValue: return "lightblue"
     of Identifier: return "lightgreen"
     of CompoundStatement: return "lightpink"
+    of IfNode: return "mediumorchid"
     else: return "white"
 
   proc traverse(node: TreeNode) =
@@ -128,6 +130,8 @@ proc generateDot(node: TreeNode, name:string) =
     case nodeType
         of IntValue:
             labelStr.add(&"\\n {node.value}")
+        of IfNode:
+            labelStr.add(&"\\n mid? left : right")
         of Identifier:
             labelStr.add(&"\\n {getSymbolName(node.id)}")
         else:
@@ -140,6 +144,10 @@ proc generateDot(node: TreeNode, name:string) =
     if node.left != nil:
       traverse(node.left)
       dotFile.write("  node", node.nodeId, " -> node", node.left.nodeId, " [label=\"left\"];\n")
+
+    if node.mid != nil:
+      traverse(node.mid )
+      dotFile.write("  node", node.nodeId, " -> node", node.mid .nodeId, " [label=\"mid\"];\n")
 
     if node.right != nil:
       traverse(node.right)

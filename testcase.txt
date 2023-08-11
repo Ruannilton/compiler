@@ -6,8 +6,11 @@ int teste;
 int value1 = 12 * 3;
 value2 = value1 - 2* 4 > 0;
 value3 = 1 + 2 + teste - 5/2 + 3*5 * 7;
-    {
+    
+    if ( value3 > value2 ) {
         int value4 = value2 + value1;
         bool x = 5 == 5;
+    } else {
+        int value5 = value2;
     }
 }

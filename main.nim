@@ -8,6 +8,12 @@ var sc : Scanner = createScanner("testcase.txt")
 
 var queue: TokenQueue = tokenize(sc)
 
+echo "Tokenizer done"
+
 let expressions = syntaxTree(queue)
 
+echo "Syntax Tree done"
+
 generateDot(expressions, "main.dot")
+
+echo "Done"

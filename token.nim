@@ -9,6 +9,8 @@ reservedKeys["bool"] = TokenBoolKeyword
 reservedKeys["string"] = TokenStringKeyword
 reservedKeys["true"] = TokenTrueKeyword
 reservedKeys["false"] = TokenFalseKeyword
+reservedKeys["if"] = TokenIf
+reservedKeys["else"] = TokenElse
 
 type Token = object
     tokenType: TokenType

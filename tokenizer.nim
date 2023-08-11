@@ -54,6 +54,10 @@ proc nextToken(scanner: var Scanner):Token =
             result.initToken(TokenLeftBrace)
         of '}':
             result.initToken(TokenRightBrace)
+        of '(':
+            result.initToken(TokenLeftParen)
+        of ')':
+            result.initToken(TokenRightParen)
         of '=':
             let nextc = scanner.nextChar()
             case nextc
@@ -101,7 +105,7 @@ proc tokenize(scanner: var Scanner):TokenQueue =
 
     while not scanner.done():
         var tk: Token = nextToken(scanner)
-        
+        if tk.getType() == TokenEOF: break
         tks.enqueue(tk)
     
     return tks
