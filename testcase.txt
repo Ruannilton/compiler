@@ -2,7 +2,7 @@ bool value2;
 int value3;
 int teste;
 
-{
+while (true) {
 int value1 = 12 * 3;
 value2 = value1 - 2* 4 > 0;
 value3 = 1 + 2 + teste - 5/2 + 3*5 * 7;

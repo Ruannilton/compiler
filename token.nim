@@ -11,6 +11,7 @@ reservedKeys["true"] = TokenTrueKeyword
 reservedKeys["false"] = TokenFalseKeyword
 reservedKeys["if"] = TokenIf
 reservedKeys["else"] = TokenElse
+reservedKeys["while"] = TokenWhile
 
 type Token = object
     tokenType: TokenType

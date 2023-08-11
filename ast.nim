@@ -126,6 +126,23 @@ proc parseIfStatement(queue: var TokenQueue): TreeNode =
 
     result = createNode(IfNode,0,whenTrue,whenFalse,exp)
 
+proc parseWhileStatement(queue: var TokenQueue): TreeNode =
+    matchNextToken(queue,TokenWhile)
+    discard queue.dequeue() # discard if
+
+    matchNextToken(queue,TokenLeftParen)
+    discard queue.dequeue() # discard (
+
+    let exp = parseExpression(queue)
+
+    matchNextToken(queue,TokenRightParen)
+    discard queue.dequeue() # discard )
+
+    let whenTrue = compoundStatement(queue)
+   
+
+    result = createNode(WhileNode,0,whenTrue,nil,mid = exp)
+
 proc parseStatement(queue: var TokenQueue): TreeNode =
 
     let tk : Token = queue.peak()
@@ -147,7 +164,8 @@ proc parseStatement(queue: var TokenQueue): TreeNode =
         discard queue.dequeue() # discard semicolon
     elif tkType == TokenIf:
         result = parseIfStatement(queue)
-
+    elif tkType == TokenWhile:
+        result = parseWhileStatement(queue)
     else:
         raise newException(OSError, &"wrong program: {tkType}")
 
@@ -193,6 +211,8 @@ proc syntaxTree(queue: var TokenQueue): TreeNode =
                 tmp = compoundStatement(queue)
             of TokenIf:
                 tmp = parseIfStatement(queue)
+            of TokenWhile:
+                tmp = parseWhileStatement(queue)
             else:
                 tmp = parseStatement(queue)
         

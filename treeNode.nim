@@ -6,6 +6,7 @@ import symbolTable
 
 var nodeCounter : int64 = 0
 
+
 type TreeNode = ref object
     nodeId: int64
     left, right,mid : TreeNode
@@ -100,6 +101,10 @@ proc createNode(nodeType: NodeType, left,right: TreeNode):TreeNode =
 proc createNode(token: Token): TreeNode =
     if token.getType() == TokenIntValue:
         result = createNode(IntValue,token.getValue())
+    if token.getType() == TokenTrueKeyword:
+        result = createNode(BoolValue,1)
+    if token.getType() == TokenFalseKeyword:
+        result = createNode(BoolValue,0)
     elif token.getType() == TokenIdentifier:
         result = createNode(Identifier,token.getIdentifier)
         
@@ -118,6 +123,8 @@ proc generateDot(node: TreeNode, name:string) =
     of Identifier: return "lightgreen"
     of CompoundStatement: return "lightpink"
     of IfNode: return "mediumorchid"
+    of WhileNode: return "mediumorchid"
+    of BoolValue: return "lightsalmon"
     else: return "white"
 
   proc traverse(node: TreeNode) =
@@ -132,6 +139,8 @@ proc generateDot(node: TreeNode, name:string) =
             labelStr.add(&"\\n {node.value}")
         of IfNode:
             labelStr.add(&"\\n mid? left : right")
+        of WhileNode:
+            labelStr.add(&"\\n while mid? left")
         of Identifier:
             labelStr.add(&"\\n {getSymbolName(node.id)}")
         else:

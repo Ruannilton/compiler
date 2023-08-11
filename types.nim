@@ -28,6 +28,7 @@ type TokenType = enum
     TokenElse
     TokenLeftParen
     TokenRightParen
+    TokenWhile
 
 type NodeType = enum
     RootNode,
@@ -36,6 +37,7 @@ type NodeType = enum
     MultiplyOperator,
     DivideOperator,
     IntValue,
+    BoolValue,
     Asign,
     Identifier,
     EqualsOperator,
@@ -46,7 +48,8 @@ type NodeType = enum
     LessEqualsOperator,
     CompoundStatement,
     GlueStatement,
-    IfNode
+    IfNode,
+    WhileNode
 
 var mapTokenToNode: Table[TokenType,NodeType] = initTable[TokenType,NodeType]()
 mapTokenToNode[TokenMinus] = SubtractOperator
