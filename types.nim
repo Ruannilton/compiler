@@ -26,6 +26,7 @@ type TokenType = enum
     TokenRightBrace
 
 type NodeType = enum
+    RootNode,
     AddOperator,
     SubtractOperator,
     MultiplyOperator,

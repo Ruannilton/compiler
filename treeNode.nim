@@ -4,7 +4,10 @@ import token
 import types
 import symbolTable
 
-type TreeNode = ref object 
+var nodeCounter : int64 = 0
+
+type TreeNode = ref object
+    nodeId: int64
     left, right : TreeNode
     nodeType : NodeType
     value: int64
@@ -24,36 +27,6 @@ opToString[GreaterEqualsOperator] = ">="
 opToString[LessEqualsOperator] = "<="
 opToString[GreaterOperator] = ">"
 opToString[LessOperator] = "<"
-
-proc printNode(root:TreeNode, space: var int64, level: int64) = 
-    var rootValue : string = ""
-
-    if root == nil:
-        return
-
-    if root.nodeType == IntValue:
-        rootValue = &"{root.value}"
-    elif root.nodeType == Identifier:
-        rootValue = &"{getSymbolName(root.id)}"
-    else:
-        rootValue = opToString[root.nodeType]
-
-    space += 2
-
-    printNode(root.right, space, level + 1)
-
-    stdout.write('\n')
-    for _ in 2..space:
-       stdout.write(' ')
-    
-    echo &"[{level}]", rootValue 
-
-    printNode(root.left, space, level + 1)
-
-proc printNode(root:TreeNode) =
-    var space: int64 = 0
-    var level: int64  = 0
-    printNode(root, space, level)
 
 
 
@@ -100,6 +73,8 @@ proc createNode(nodeType: NodeType, value :int64, left,right: TreeNode):TreeNode
     tmp.value = value
     tmp.left = left
     tmp.right = right
+    tmp.nodeId = nodeCounter
+    nodeCounter = nodeCounter + 1
     return tmp
 
 proc createNode(nodeType: NodeType, identifier :string, left,right: TreeNode):TreeNode =
@@ -108,6 +83,8 @@ proc createNode(nodeType: NodeType, identifier :string, left,right: TreeNode):Tr
     tmp.id = getSymbolId(identifier)
     tmp.left = left
     tmp.right = right
+    tmp.nodeId = nodeCounter
+    nodeCounter = nodeCounter + 1
     return tmp
    
 proc createNode(nodeType: NodeType, value :int64):TreeNode =
@@ -125,4 +102,50 @@ proc createNode(token: Token): TreeNode =
     elif token.getType() == TokenIdentifier:
         result = createNode(Identifier,token.getIdentifier)
         
-export TreeNode,printNode,createNode,debugNode
+        
+proc generateDot(node: TreeNode, name:string) =
+
+  var dotFile: File
+  discard open(dotFile, name, fmWrite)
+
+  dotFile.write("digraph Tree {\n")
+  dotFile.write("  node [shape=box];\n\n")
+
+  proc getNodeColor(nodeType: NodeType): string =
+    case nodeType
+    of IntValue: return "lightblue"
+    of Identifier: return "lightgreen"
+    else: return "white"
+
+  proc traverse(node: TreeNode) =
+    
+   
+    let nodeType = node.nodeType
+
+    var labelStr = &"{nodeType}"
+
+    case nodeType
+        of IntValue:
+            labelStr.add(&"\\n {node.value}")
+        of Identifier:
+            labelStr.add(&"\\n {getSymbolName(node.id)}")
+        else:
+            if opToString.hasKey(nodeType):
+                labelStr.add(&"\\n left {opToString[nodeType]} right")
+
+    let nodeColor = getNodeColor(nodeType)
+    dotFile.write("  node", node.nodeId, " [label=\"", labelStr, "\", style=filled, fillcolor=", nodeColor,"];\n")
+
+    if node.left != nil:
+      traverse(node.left)
+      dotFile.write("  node", node.nodeId, " -> node", node.left.nodeId, " [label=\"left\"];\n")
+
+    if node.right != nil:
+      traverse(node.right)
+      dotFile.write("  node", node.nodeId, " -> node", node.right.nodeId, " [label=\"right\"];\n")
+
+  traverse(node)
+  dotFile.write("}\n")
+  close(dotFile)
+
+export TreeNode,createNode,debugNode,generateDot

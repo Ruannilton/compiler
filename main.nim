@@ -10,3 +10,5 @@ var queue: TokenQueue = tokenize(sc)
 
 var expressions: seq[TreeNode] = syntaxTree(queue)
 
+for tree in expressions:
+    generateDot(tree, "main.dot")
