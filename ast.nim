@@ -71,6 +71,8 @@ proc parseDeclaration(queue: var TokenQueue):TreeNode =
         let rvalue = parseExpression(queue,0)
 
         return createNode(Asign,createNode(lvalue),rvalue)
+    
+    return nil
 
 proc parseStatement(queue: var TokenQueue): TreeNode =
 
@@ -110,7 +112,11 @@ proc compoundStatement(queue: var TokenQueue): TreeNode =
         else:
             tmp = parseStatement(queue)
         
-        lastNode = createNode(GlueStatement,tmp,lastNode)
+        if tmp != nil:
+            if lastNode != nil:
+                lastNode = createNode(GlueStatement,tmp,lastNode)
+            else:
+                lastNode = tmp
 
         tkType = queue.peak().getType()
     
@@ -118,23 +124,27 @@ proc compoundStatement(queue: var TokenQueue): TreeNode =
 
     return createNode(CompoundStatement,nil,lastNode)
 
-proc syntaxTree(queue: var TokenQueue): seq[TreeNode] =
-    var expresions : seq[TreeNode]
+proc syntaxTree(queue: var TokenQueue): TreeNode =
+    var lastNode: TreeNode = nil
+    var tmp: TreeNode
+    var tkType = queue.peak().getType()
     
-    while not queue.empty():
-        let exp : TreeNode = parseStatement(queue)
+    while tkType != TokenEOF:
         
-        if exp == nil:
-            continue
+        if tkType == TokenLeftBrace:
+            tmp = compoundStatement(queue)
+        else:
+            tmp = parseStatement(queue)
+        
+        if tmp != nil:
+            if lastNode != nil:
+                lastNode = createNode(GlueStatement,tmp,lastNode)
+            else:
+                lastNode = tmp
 
-        echo debugNode(exp)
-        expresions.add(exp)
+        tkType = queue.peak().getType()
 
-        if queue.peak().getType() == TokenEOF:
-            break
-
-    return expresions
-
+    return createNode(RootNode,nil,lastNode)
 
 
 

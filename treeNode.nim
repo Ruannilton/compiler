@@ -115,6 +115,7 @@ proc generateDot(node: TreeNode, name:string) =
     case nodeType
     of IntValue: return "lightblue"
     of Identifier: return "lightgreen"
+    of CompoundStatement: return "lightpink"
     else: return "white"
 
   proc traverse(node: TreeNode) =

@@ -8,7 +8,6 @@ var sc : Scanner = createScanner("testcase.txt")
 
 var queue: TokenQueue = tokenize(sc)
 
-var expressions: seq[TreeNode] = syntaxTree(queue)
+let expressions = syntaxTree(queue)
 
-for tree in expressions:
-    generateDot(tree, "main.dot")
+generateDot(expressions, "main.dot")
