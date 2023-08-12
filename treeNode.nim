@@ -1,112 +1,103 @@
-import std/tables
 import std/strformat
 import token
 import types
 import symbolTable
 
-var nodeCounter : int64 = 0
+var nodeCounter : int = 0
 
 
 type TreeNode = ref object
-    nodeId: int64
-    left, right,mid : TreeNode
-    nodeType : NodeType
-    value: int64
-    id: int64
-
-var opToString: Table[NodeType,string] = initTable[NodeType,string]()
-
-opToString[SubtractOperator] = "-"
-opToString[AddOperator] = "+"
-opToString[MultiplyOperator] = "*"
-opToString[DivideOperator] = "/"
-opToString[Asign] = "="
-
-opToString[EqualsOperator] = "=="
-opToString[NotEqualsOperator] = "!="
-opToString[GreaterEqualsOperator] = ">="
-opToString[LessEqualsOperator] = "<="
-opToString[GreaterOperator] = ">"
-opToString[LessOperator] = "<"
-
-
-proc debugNode(root:TreeNode): string =
-
-    if root.nodeType == GlueStatement:
-        return debugNode(root.left)
-
-    if root.nodeType == CompoundStatement:
-        var lines: seq[string]
-        var current = root.right
-
-        while current != nil:
-            lines.add(&"{debugNode(current.left)}\n")
-            current = current.right
-
-        var ret = "{\n"
-        let l = lines.len() - 1
-        
-        for index in countdown(l,0):
-            ret.add(lines[index])
-
-        ret.add("}")
-        return ret
-
-    if root.nodeType == IntValue:
-        return &"{root.value}"
-
-    if root.nodeType == Identifier:
-        return getSymbolName(root.id)
-
-    if root.nodeType == Asign:
-        return &"{debugNode(root.left)} = {debugNode(root.right)}"
-
-    let op = opToString[root.nodeType]
-
+    nodeId: int
+    case nodeType: NodeType
+    of IntNode: 
+        valueInt:  int
+    of BoolNode:
+        valueBool: bool
+    of CharNode:
+        valueChar: char
+    of IdentifierNode:
+        id: int
+    of RootNode, CompoundNode:
+        child: TreeNode
+    of IfNode:
+        wTrue, wFalse, exp: TreeNode
+    else:
+        left, right: TreeNode
     
-  
-    return &"({debugNode(root.left)} {op} {debugNode(root.right)})"
+proc newNodeId():int = 
+    result = nodeCounter
+    nodeCounter += 1
 
-proc createNode(nodeType: NodeType, value :int64, left,right: TreeNode, mid: TreeNode = nil):TreeNode =
-    var tmp: TreeNode = new(TreeNode)
-    tmp.nodeType = nodeType
-    tmp.value = value
-    tmp.left = left
-    tmp.right = right
-    tmp.mid = mid
-    tmp.nodeId = nodeCounter
-    nodeCounter = nodeCounter + 1
-    return tmp
+# int node
+proc createNode(value: int): TreeNode =
+    var node = TreeNode(nodeType: IntNode)
+    node.nodeId = newNodeId()
+    node.valueInt = value
+    return node
 
-proc createNode(nodeType: NodeType, identifier :string, left,right: TreeNode):TreeNode =
-    var tmp: TreeNode = new(TreeNode)
-    tmp.nodeType = nodeType
-    tmp.id = getSymbolId(identifier)
-    tmp.left = left
-    tmp.right = right
-    tmp.mid = nil
-    tmp.nodeId = nodeCounter
-    nodeCounter = nodeCounter + 1
-    return tmp
-   
-proc createNode(nodeType: NodeType, value :int64):TreeNode =
-    result = createNode(nodeType,value,nil,nil)
+# bool node
+proc createNode(value: bool): TreeNode =
+    var node = TreeNode(nodeType: BoolNode)
+    node.nodeId = newNodeId()
+    node.valueBool = value
+    return node
 
-proc createNode(nodeType: NodeType, identifier :string):TreeNode =
-    result = createNode(nodeType,identifier,nil,nil)
+# char node
+proc createNode(value: char): TreeNode =
+    var node = TreeNode(nodeType: CharNode)
+    node.nodeId = newNodeId()
+    node.valueChar = value
+    return node
 
-proc createNode(nodeType: NodeType, left,right: TreeNode):TreeNode =
-    return createNode(nodeType,0,left,right)
+# identifier node
+proc createNode(identifier: string): TreeNode =
+    var node = TreeNode(nodeType: IdentifierNode)
+    node.nodeId = newNodeId()
+    node.id = getSymbolId(identifier)
+    return node
+
+# single child node
+proc createNode(nodeType: NodeType, child:TreeNode): TreeNode =
+    var node = TreeNode(nodeType: nodeType)
+    node.child = child
+    node.nodeId = newNodeId()
+    return node
+
+# if node
+proc createNode(expression, whenTrue, whenFalse:TreeNode): TreeNode =
+    var node = TreeNode(nodeType: IfNode)
+    node.nodeId = newNodeId()
+    node.wTrue = whenTrue
+    node.wFalse = whenFalse
+    node.exp = expression
+    return node
+
+# default node
+proc createNode(nodeType: NodeType,rvalue, lvalue:TreeNode): TreeNode =
+    var node = TreeNode(nodeType: nodeType)
+    node.nodeId = newNodeId()
+    node.left = lvalue
+    node.right = rvalue
+    return node
+
+proc createGlueNode(first, second:TreeNode): TreeNode =
+    var node = TreeNode(nodeType: GlueNode)
+    node.nodeId = newNodeId()
+    node.left = first
+    node.right = second
+    return node
+####
+
 
 proc createNode(token: Token): TreeNode =
     if token.getType() == TokenIntValue:
-        result = createNode(IntValue,token.getValue())
-    if token.getType() == TokenTrueKeyword:
-        result = createNode(BoolValue,1)
-    if token.getType() == TokenFalseKeyword:
-        result = createNode(BoolValue,0)
+        result = createNode(token.getIntValue())
+    if token.getType() == TokenBoolValue:
+        result = createNode(token.getBoolValue())
+    if token.getType() == TokenCharValue:
+        result = createNode(token.getCharValue())
     elif token.getType() == TokenIdentifier:
-        result = createNode(Identifier,token.getIdentifier)
+        result = createNode(token.getIdentifier())
         
         
 proc generateDot(node: TreeNode, name:string) =
@@ -119,12 +110,12 @@ proc generateDot(node: TreeNode, name:string) =
 
   proc getNodeColor(nodeType: NodeType): string =
     case nodeType
-    of IntValue: return "lightblue"
-    of Identifier: return "lightgreen"
-    of CompoundStatement: return "lightpink"
+    of IntNode: return "lightblue"
+    of IdentifierNode: return "lightgreen"
+    of CompoundNode: return "lightpink"
     of IfNode: return "mediumorchid"
     of WhileNode: return "mediumorchid"
-    of BoolValue: return "lightsalmon"
+    of BoolNode: return "lightsalmon"
     else: return "white"
 
   proc traverse(node: TreeNode) =
@@ -135,35 +126,57 @@ proc generateDot(node: TreeNode, name:string) =
     var labelStr = &"{nodeType}"
 
     case nodeType
-        of IntValue:
-            labelStr.add(&"\\n {node.value}")
+        of IntNode:
+            labelStr.add(&"\\n {node.valueInt}")
+        of BoolNode:
+            labelStr.add(&"\\n {node.valueBool}")
+        of CharNode:
+            labelStr.add(&"\\n {node.valueChar}")
         of IfNode:
-            labelStr.add(&"\\n mid? left : right")
+            labelStr.add(&"\\n exp? left : right")
         of WhileNode:
-            labelStr.add(&"\\n while mid? left")
-        of Identifier:
+            labelStr.add(&"\\n while right? left")
+        of IdentifierNode:
             labelStr.add(&"\\n {getSymbolName(node.id)}")
         else:
-            if opToString.hasKey(nodeType):
-                labelStr.add(&"\\n left {opToString[nodeType]} right")
+            if nodeType.hasSymbol():
+                labelStr.add(&"\\n left {nodeType.getSymbol()} right")
 
     let nodeColor = getNodeColor(nodeType)
     dotFile.write("  node", node.nodeId, " [label=\"", labelStr, "\", style=filled, fillcolor=", nodeColor,"];\n")
 
-    if node.left != nil:
-      traverse(node.left)
-      dotFile.write("  node", node.nodeId, " -> node", node.left.nodeId, " [label=\"left\"];\n")
+    case nodeType:
+        of IntNode,BoolNode,CharNode,IdentifierNode: discard
+        of IfNode:
+            traverse(node.wTrue)
+            dotFile.write("  node", node.nodeId, " -> node", node.wTrue.nodeId, " [label=\"true\"];\n")
 
-    if node.mid != nil:
-      traverse(node.mid )
-      dotFile.write("  node", node.nodeId, " -> node", node.mid .nodeId, " [label=\"mid\"];\n")
+            traverse(node.exp)
+            dotFile.write("  node", node.nodeId, " -> node", node.exp.nodeId, " [label=\"exp\"];\n")
 
-    if node.right != nil:
-      traverse(node.right)
-      dotFile.write("  node", node.nodeId, " -> node", node.right.nodeId, " [label=\"right\"];\n")
+            if node.wFalse != nil:
+                traverse(node.wFalse)
+                dotFile.write("  node", node.nodeId, " -> node", node.wFalse.nodeId, " [label=\"false\"];\n")
+        of CompoundNode,RootNode:
+            traverse(node.child)
+            dotFile.write("  node", node.nodeId, " -> node", node.child.nodeId, " [label=\"child\"];\n")
+        of GlueNode:
+            if node.left != nil:
+                traverse(node.left)
+                dotFile.write("  node", node.nodeId, " -> node", node.left.nodeId, " [label=\"first\"];\n")
+            if node.right != nil:
+                traverse(node.right)
+                dotFile.write("  node", node.nodeId, " -> node", node.right.nodeId, " [label=\"second\"];\n")
+        else:
+            if node.left != nil:
+                traverse(node.left)
+                dotFile.write("  node", node.nodeId, " -> node", node.left.nodeId, " [label=\"left\"];\n")
+            if node.right != nil:
+                traverse(node.right)
+                dotFile.write("  node", node.nodeId, " -> node", node.right.nodeId, " [label=\"right\"];\n")
 
   traverse(node)
   dotFile.write("}\n")
   close(dotFile)
 
-export TreeNode,createNode,debugNode,generateDot
+export TreeNode,createNode,generateDot,createGlueNode

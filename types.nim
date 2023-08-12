@@ -2,20 +2,19 @@ import std/tables
 import std/strformat
 
 type TokenType = enum
-    TokenEOF,
-    TokenMinus,
-    TokenPlus,
-    TokenStar,
-    TokenSlash,
-    TokenAssign,
-    TokenIntValue,
-    TokenIdentifier,
-    TokenIntKeyword,
-    TokenStringKeyword,
-    TokenBoolKeyword,
-    TokenTrueKeyword,
-    TokenFalseKeyword,
-    TokenSemiColonKeyword,
+    TokenEOF
+    TokenMinus
+    TokenPlus
+    TokenStar
+    TokenSlash
+    TokenAssign
+    TokenIntValue
+    TokenBoolValue
+    TokenCharValue
+    TokenIdentifier
+    TokenTrueKeyword
+    TokenFalseKeyword
+    TokenSemiColonKeyword
     TokenEquals
     TokenNotEquals
     TokenGreater
@@ -29,95 +28,147 @@ type TokenType = enum
     TokenLeftParen
     TokenRightParen
     TokenWhile
+    TokenIntType
+    TokenBoolType
+    TokenCharType
 
 type NodeType = enum
-    RootNode,
-    AddOperator,
-    SubtractOperator,
-    MultiplyOperator,
-    DivideOperator,
-    IntValue,
-    BoolValue,
-    Asign,
-    Identifier,
-    EqualsOperator,
-    NotEqualsOperator,
-    GreaterOperator,
-    LessOperator,
-    GreaterEqualsOperator,
-    LessEqualsOperator,
-    CompoundStatement,
-    GlueStatement,
-    IfNode,
+    RootNode
+    AddNode
+    SubtractNode
+    MultiplyNode
+    DivideNode
+    IntNode
+    BoolNode
+    AsignNode
+    CharNode
+    IdentifierNode
+    EqualsNode
+    NotEqualsNode
+    GreaterNode
+    LessNode
+    GreaterEqualsNode
+    LessEqualsNode
+    CompoundNode
+    GlueNode
+    IfNode
     WhileNode
 
-var mapTokenToNode: Table[TokenType,NodeType] = initTable[TokenType,NodeType]()
-mapTokenToNode[TokenMinus] = SubtractOperator
-mapTokenToNode[TokenPlus] = AddOperator
-mapTokenToNode[TokenStar] = MultiplyOperator
-mapTokenToNode[TokenSlash] = DivideOperator
-mapTokenToNode[TokenIntValue] = IntValue
+let mapTokenToNode: Table[TokenType,NodeType] = {
+    TokenMinus: SubtractNode,
+    TokenPlus: AddNode,
+    TokenStar: MultiplyNode,
+    TokenSlash: DivideNode,
+    TokenIntValue: IntNode,
+    TokenIdentifier: IdentifierNode,
+    TokenAssign: AsignNode,
+    TokenEquals: EqualsNode,
+    TokenNotEquals: NotEqualsNode,
+    TokenGreater: GreaterNode,
+    TokenLess: LessNode,
+    TokenGreaterEquals: GreaterEqualsNode,
+    TokenLessEquals: LessEqualsNode,
+    TokenIf: IfNode,
+    TokenWhile: WhileNode
+}.toTable()
 
-mapTokenToNode[TokenIdentifier] = Identifier
-mapTokenToNode[TokenAssign] = Asign
-mapTokenToNode[TokenEquals] = EqualsOperator
-mapTokenToNode[TokenNotEquals] = NotEqualsOperator
-mapTokenToNode[TokenGreater] = GreaterOperator
-mapTokenToNode[TokenLess] = LessOperator
-mapTokenToNode[TokenGreaterEquals] = GreaterEqualsOperator
-mapTokenToNode[TokenLessEquals] = LessEqualsOperator
+let mapNodeToToken: Table[NodeType, TokenType] = {
+  SubtractNode: TokenMinus,
+  AddNode: TokenPlus,
+  MultiplyNode: TokenStar,
+  DivideNode: TokenSlash,
+  IntNode: TokenIntValue,
+  IdentifierNode: TokenIdentifier,
+  AsignNode: TokenAssign,
+  EqualsNode: TokenEquals,
+  NotEqualsNode: TokenNotEquals,
+  GreaterNode: TokenGreater,
+  LessNode: TokenLess,
+  GreaterEqualsNode: TokenGreaterEquals,
+  LessEqualsNode: TokenLessEquals,
+  IfNode: TokenIf,
+  WhileNode: TokenWhile
+}.toTable()
 
-var opPrecedence: Table[NodeType,int64] = initTable[NodeType,int64]()
-opPrecedence[IntValue] = 0
-opPrecedence[Identifier] = 0
-opPrecedence[SubtractOperator] = 10
-opPrecedence[AddOperator] = 10
-opPrecedence[MultiplyOperator] = 20
-opPrecedence[DivideOperator] = 20
-opPrecedence[EqualsOperator] = 20
-opPrecedence[NotEqualsOperator] = 20
-opPrecedence[GreaterOperator] = 40
-opPrecedence[LessOperator] = 40
-opPrecedence[GreaterEqualsOperator] = 40
-opPrecedence[LessEqualsOperator] = 40
+
+
+let opPrecedence: Table[NodeType,int] = {
+    IntNode,IdentifierNode: 0,
+    SubtractNode,AddNode: 10,
+    MultiplyNode,DivideNode,EqualsNode,NotEqualsNode: 20,
+    GreaterNode,LessNode,GreaterEqualsNode,LessEqualsNode: 40
+}.toTable()
+
+let opToString: Table[TokenType,string] = {
+    TokenMinus: "-",
+    TokenPlus: "+",
+    TokenStar: "*",
+    TokenSlash: "/",
+    TokenAssign: "=",
+    TokenEquals: "==",
+    TokenNotEquals: "!=",
+    TokenGreaterEquals: ">=",
+    TokenLessEquals: "<=",
+    TokenGreater: ">", 
+    TokenLess: "<", 
+}.toTable()
 
 proc expressionFinal(tp: TokenType):bool = 
     return tp in [TokenSemiColonKeyword,TokenLeftParen,TokenRightParen]
 
 proc expressionToken(tp: TokenType):bool = 
     return tp in [
-    TokenMinus,
-    TokenPlus,
-    TokenStar,
-    TokenSlash,
-    TokenIntValue,
-    TokenIdentifier,
-    TokenTrueKeyword,
-    TokenFalseKeyword,
-    TokenEquals,
-    TokenNotEquals,
-    TokenGreater,
-    TokenLess,
-    TokenGreaterEquals,
-    TokenLessEquals,
+        TokenMinus,
+        TokenPlus,
+        TokenStar,
+        TokenSlash,
+        TokenIntValue,
+        TokenCharValue,
+        TokenBoolValue,
+        TokenIdentifier,
+        TokenTrueKeyword,
+        TokenFalseKeyword,
+        TokenEquals,
+        TokenNotEquals,
+        TokenGreater,
+        TokenLess,
+        TokenGreaterEquals,
+        TokenLessEquals,
     ]
 
-proc tokenToNode(tp: TokenType):NodeType =
-    if mapTokenToNode.hasKey(tp):
-        return mapTokenToNode[tp]
+
+proc toNodeType(self: TokenType): NodeType =
+    if mapTokenToNode.hasKey(self):
+        return mapTokenToNode[self]
     else:
-        raise newException(OSError, &"Cannot convert {tp} to NodeType")
+        raise newException(OSError, &"Cannot convert {self} to NodeType")
 
-proc getPrecedence(op: NodeType):int64 = 
-    if opPrecedence.hasKey(op):
-        return opPrecedence[op]
+proc toTokenType(self: NodeType): TokenType =
+    if mapNodeToToken.hasKey(self):
+        return mapNodeToToken[self]
     else:
-        raise newException(OSError, &"NodeType {op} has no precedence rule")
+        raise newException(OSError, &"Cannot convert {self} to TokenType")
 
-proc getPrecedence(op: TokenType):int64 =  getPrecedence(tokenToNode(op))
+proc getPrecedence(self: NodeType): int = 
+    if opPrecedence.hasKey(self):
+        return opPrecedence[self]
+    else:
+        raise newException(OSError, &"NodeType {self} has no precedence rule")
 
+proc getPrecedence(self: TokenType): int = self.toNodeType().getPrecedence()
 
-proc isDeclaration(op: TokenType): bool =
-    return op in [ TokenIntKeyword, TokenStringKeyword, TokenBoolKeyword]
+proc getSymbol(self: TokenType):string = 
+    if opToString.hasKey(self):
+        return opToString[self]
+    else:
+        raise newException(OSError, &"{self} does not contains a symbol")
 
-export TokenType,NodeType,tokenToNode,getPrecedence,isDeclaration,expressionFinal,expressionToken
+proc hasSymbol(self: TokenType):bool = opToString.hasKey(self)
+
+proc getSymbol(self: NodeType):string = getSymbol(self.toTokenType())
+
+proc hasSymbol(self: NodeType):bool = 
+    if not mapNodeToToken.hasKey(self): return false
+    return opToString.hasKey(mapNodeToToken[self])
+
+export TokenType,NodeType,getPrecedence,expressionFinal,expressionToken,getSymbol,hasSymbol,toNodeType,toTokenType

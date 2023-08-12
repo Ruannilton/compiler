@@ -5,14 +5,14 @@ type SymbolData = object
     name: string
 
 type SymbolTable = object
-    index: int64
+    index: int
     data: seq[SymbolData]
 
-var symbolIndex: Table[string,int64] = initTable[string,int64]()
+var symbolIndex: Table[string,int] = initTable[string,int]()
 
 var symbolTable: SymbolTable
 
-proc addSymbol(symbol: string):int64 =
+proc addSymbol(symbol: string):int =
     
     if not symbolIndex.hasKey(symbol):
         
@@ -31,17 +31,17 @@ proc addSymbol(symbol: string):int64 =
 proc existSymbol(symbol: string):bool =
     return symbolIndex.hasKey(symbol)
 
-proc getSymbol(id: int64):SymbolData =
+proc getSymbol(id: int):SymbolData =
     
     if id >= symbolTable.index:
         raise newException(OSError,&"Symbol not declared")
     
     return symbolTable.data[id]
 
-proc getSymbolName(id:int64):string =
+proc getSymbolName(id:int):string =
     getSymbol(id).name
 
-proc getSymbolId(symbol: string):int64 =
+proc getSymbolId(symbol: string):int =
     if not symbolIndex.hasKey(symbol):
         raise newException(OSError,&"Symbol not declared")
     

@@ -5,16 +5,10 @@ import treeNode
 import symbolTable
 import std/strformat
 
-
 proc isNextToken(queue: TokenQueue, t: TokenType):bool = 
     var tk : Token = queue.peak()
     var tkType = tk.getType()
     return tkType == t
-
-proc isNextToken(queue: TokenQueue, t: seq[TokenType]):bool = 
-    var tk : Token = queue.peak()
-    var tkType = tk.getType()
-    return tkType in t
 
 proc matchNextToken(queue: TokenQueue, t: TokenType) = 
     var tk : Token = queue.peak()
@@ -32,7 +26,7 @@ proc matchNextToken(queue: TokenQueue, t: seq[TokenType]) =
 
 proc compoundStatement(queue: var TokenQueue): TreeNode
 
-proc parseExpression(queue: var TokenQueue, precedence: int64 = 0): TreeNode =  
+proc parseExpression(queue: var TokenQueue, precedence: int = 0): TreeNode =  
     
     let tk = queue.dequeue()
     var nextType :TokenType = tk.getType()
@@ -52,16 +46,15 @@ proc parseExpression(queue: var TokenQueue, precedence: int64 = 0): TreeNode =
     if not expressionToken(nextType):
         raise newException(OSError, &"Invalid expression token: {nextType}")
 
-    let prec = getPrecedence(nextType) 
 
-    while prec >= precedence:
+    while nextType.getPrecedence() >= precedence:
         discard queue.dequeue()
 
-        var rvalue: TreeNode = parseExpression(queue, prec)
+        var rvalue: TreeNode = parseExpression(queue, nextType.getPrecedence())
         
-        let ndType:NodeType = tokenToNode(nextType)
-
-        lvalue = createNode(ndType,0,lvalue,rvalue)
+        let ndType: NodeType = nextType.toNodeType()
+        
+        lvalue = createNode(ndType,lvalue,rvalue)
 
         nextType = queue.peak().getType()
 
@@ -83,15 +76,13 @@ proc parseAssign(queue: var TokenQueue):TreeNode =
 
     let rvalue = parseExpression(queue,0)
 
-    return createNode(Asign,lvalue,rvalue)
+    return createNode(AsignNode,rvalue,lvalue)
 
 proc parseDeclaration(queue: var TokenQueue):TreeNode =
-    let types = @[TokenIntKeyword,TokenStringKeyword,TokenBoolKeyword]
-    matchNextToken(queue,types)
+    matchNextToken(queue,@[TokenIntType,TokenBoolType,TokenCharType])
     discard queue.dequeue() # discard type
 
     let lvalue = queue.dequeue()
-
     discard addSymbol(lvalue.getIdentifier())
 
     let next = queue.peak()
@@ -101,7 +92,7 @@ proc parseDeclaration(queue: var TokenQueue):TreeNode =
         
         let rvalue = parseExpression(queue,0)
 
-        return createNode(Asign,createNode(lvalue),rvalue)
+        return createNode(AsignNode,rvalue,createNode(lvalue))
     
     return nil
 
@@ -124,7 +115,7 @@ proc parseIfStatement(queue: var TokenQueue): TreeNode =
         discard queue.dequeue() # discard else
         whenFalse = compoundStatement(queue)
 
-    result = createNode(IfNode,0,whenTrue,whenFalse,exp)
+    result = createNode(exp,whenTrue,whenFalse)
 
 proc parseWhileStatement(queue: var TokenQueue): TreeNode =
     matchNextToken(queue,TokenWhile)
@@ -141,7 +132,7 @@ proc parseWhileStatement(queue: var TokenQueue): TreeNode =
     let whenTrue = compoundStatement(queue)
    
 
-    result = createNode(WhileNode,0,whenTrue,nil,mid = exp)
+    result = createNode(WhileNode, exp, whenTrue)
 
 proc parseStatement(queue: var TokenQueue): TreeNode =
 
@@ -149,22 +140,23 @@ proc parseStatement(queue: var TokenQueue): TreeNode =
 
     let tkType = tk.getType();
 
-    if tkType == TokenLeftBrace:
+    case tkType
+    of TokenLeftBrace:
         return compoundStatement(queue)
 
-    elif isDeclaration(tkType):
+    of TokenIntType,TokenBoolType,TokenCharType:
         let decl = parseDeclaration(queue)
         result = decl
         matchNextToken(queue,TokenSemiColonKeyword)
         discard queue.dequeue() # discard semicolon
     
-    elif tkType == TokenIdentifier:
+    of TokenIdentifier:
         result = parseAssign(queue)
         matchNextToken(queue,TokenSemiColonKeyword)
         discard queue.dequeue() # discard semicolon
-    elif tkType == TokenIf:
+    of TokenIf:
         result = parseIfStatement(queue)
-    elif tkType == TokenWhile:
+    of TokenWhile:
         result = parseWhileStatement(queue)
     else:
         raise newException(OSError, &"wrong program: {tkType}")
@@ -189,7 +181,7 @@ proc compoundStatement(queue: var TokenQueue): TreeNode =
         
         if tmp != nil:
             if lastNode != nil:
-                lastNode = createNode(GlueStatement,tmp,lastNode)
+                lastNode = createGlueNode(lastNode,tmp)
             else:
                 lastNode = tmp
 
@@ -198,7 +190,7 @@ proc compoundStatement(queue: var TokenQueue): TreeNode =
     matchNextToken(queue,TokenRightBrace)
     discard queue.dequeue() # skip }
 
-    return createNode(CompoundStatement,nil,lastNode)
+    return createNode(CompoundNode,lastNode)
 
 proc syntaxTree(queue: var TokenQueue): TreeNode =
     var lastNode: TreeNode = nil
@@ -218,13 +210,13 @@ proc syntaxTree(queue: var TokenQueue): TreeNode =
         
         if tmp != nil:
             if lastNode != nil:
-                lastNode = createNode(GlueStatement,tmp,lastNode)
+                lastNode = createGlueNode(lastNode,tmp)
             else:
                 lastNode = tmp
 
         tkType = queue.peak().getType()
 
-    return createNode(RootNode,nil,lastNode)
+    return createNode(RootNode,lastNode)
 
 
 

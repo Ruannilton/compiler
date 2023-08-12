@@ -3,101 +3,132 @@ import scanner
 import strutils
 import tokenQueue
 import types
+import std/strformat
 
-proc nextInt(scanner :var Scanner): Token =
-    var value: int64 = 0
+proc parseChar(scanner :var Scanner): Token =
+    let line = scanner.getLine()
+    let index = scanner.getIndex()
+    var value: char = scanner.nextChar()
+    var nextC: char = scanner.nextChar()
+    
+    if nextC != '\'':
+        raise newException(OSError,&"\' expected, got {nextC}")
+
+    return createToken(TokenCharValue, value,line,index)  
+
+proc parseInt(scanner :var Scanner): Token =
+    var value: int = 0
     var c: char = scanner.nextChar()
     
+    let line = scanner.getLine()
+    let index = scanner.getIndex()
+
     while isDigit(c):
         let i = ord(c) - ord('0')
         value = value * 10 + i
         c = scanner.nextChar()
     
     scanner.putBack()
-    result.initToken(TokenIntValue, value)
+    result = createToken(TokenIntValue, value,line,index)
 
-proc nextKeyword(scanner :var Scanner): Token =    
+proc parseKeyword(scanner :var Scanner): Token =    
     var c: char = scanner.nextChar()
     var buffer: seq[char]
+
+    let line = scanner.getLine()
+    let index = scanner.getIndex()
 
     while isAlphaAscii(c) or isDigit(c) or c == '_':
         buffer.add(c)
         c = scanner.nextChar()
 
-    var id: string = join(buffer, "")
+    let name: string = join(buffer, "")
 
-    let tp = getIdentifier(id)
+    let tp:TokenType = getIdentifierType(name)
 
-    if tp == TokenIdentifier:
-        result.initToken(tp,id)
+    case tp
+    of TokenIdentifier:
+        result = createToken(TokenIdentifier,name,line,index)
+    of TokenTrueKeyword:
+        result = createToken(TokenBoolValue,true,line,index)
+    of TokenFalseKeyword:
+        result = createToken(TokenBoolValue,false,line,index)
     else:
-        result.initToken(tp)
-
+        result = createToken(tp,line,index)
     scanner.putBack()
 
 proc nextToken(scanner: var Scanner):Token =
     scanner.skipWitheSpace()
+    
     let c : char = scanner.nextChar()
+
+    let line = scanner.getLine()
+    let index = scanner.getIndex()
 
     case c:
         of '+':
-            result.initToken(TokenPlus)
+            result = createToken(TokenPlus,line,index)
         of '-':
-            result.initToken(TokenMinus)
+            result = createToken(TokenMinus,line,index)
         of '*':
-            result.initToken(TokenStar)
+            result = createToken(TokenStar,line,index)
         of '/':
-            result.initToken(TokenSlash)
+            result = createToken(TokenSlash,line,index)
         of '\0':
-            result.initToken(TokenEOF)
+            result = createToken(TokenEOF,line,index)
         of '{':
-            result.initToken(TokenLeftBrace)
+            result = createToken(TokenLeftBrace,line,index)
         of '}':
-            result.initToken(TokenRightBrace)
+            result = createToken(TokenRightBrace,line,index)
         of '(':
-            result.initToken(TokenLeftParen)
+            result = createToken(TokenLeftParen,line,index)
         of ')':
-            result.initToken(TokenRightParen)
+            result = createToken(TokenRightParen,line,index)
+        of '\'':
+            result = parseChar(scanner)
         of '=':
             let nextc = scanner.nextChar()
             case nextc
                 of '=':
-                    result.initToken(TokenEquals)
+                    result = createToken(TokenEquals,line,index)
                 else:
                     scanner.putBack()
-                    result.initToken(TokenAssign)
+                    result = createToken(TokenAssign,line,index)
         of ';':
-            result.initToken(TokenSemiColonKeyword)
+            result = createToken(TokenSemiColonKeyword,line,index)
         of '>':
             let nextc = scanner.nextChar()
             case nextc
                 of '=':
-                    result.initToken(TokenGreaterEquals)
+                    result = createToken(TokenGreaterEquals,line,index)
                 else:
                     scanner.putBack()
-                    result.initToken(TokenGreater)
+                    result = createToken(TokenGreater,line,index)
         of '<':
             let nextc = scanner.nextChar()
             case nextc
                 of '=':
-                    result.initToken(TokenLessEquals)
+                    result = createToken(TokenLessEquals,line,index)
                 else:
                     scanner.putBack()
-                    result.initToken(TokenLess)
+                    result = createToken(TokenLess,line,index)
         of '!':
             let nextc = scanner.nextChar()
             case nextc
                 of '=':
-                    result.initToken(TokenLessEquals)
+                    result = createToken(TokenLessEquals,line,index)
                 else:
                     raise newException(OSError,"Token \'!\' is not valid")
         else:
             scanner.putBack()
 
             if isDigit(c):
-                result = nextInt(scanner)
+                result = parseInt(scanner)
             elif isAlphaAscii(c) or c == '_':
-                result = nextKeyword(scanner)
+                result = parseKeyword(scanner)
+            else:
+                raise newException(OSError,&"Failed to parse token at line {line} and position {index}")
+
 
 
 proc tokenize(scanner: var Scanner):TokenQueue = 
@@ -108,6 +139,9 @@ proc tokenize(scanner: var Scanner):TokenQueue =
         if tk.getType() == TokenEOF: break
         tks.enqueue(tk)
     
+    let line = scanner.getLine()
+    let index = scanner.getIndex()
+    tks.enqueue(createToken(TokenEOF,line,index))
     return tks
 
 export tokenize

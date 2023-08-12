@@ -1,6 +1,7 @@
 bool value2;
 int value3;
 int teste;
+char tchar = 'A';
 
 while (true) {
 int value1 = 12 * 3;

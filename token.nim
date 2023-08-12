@@ -2,51 +2,93 @@ import std/strformat
 import std/tables
 import types
 
-var reservedKeys: Table[string,TokenType] = initTable[string, TokenType]()
-
-reservedKeys["int"] = TokenIntKeyword
-reservedKeys["bool"] = TokenBoolKeyword
-reservedKeys["string"] = TokenStringKeyword
-reservedKeys["true"] = TokenTrueKeyword
-reservedKeys["false"] = TokenFalseKeyword
-reservedKeys["if"] = TokenIf
-reservedKeys["else"] = TokenElse
-reservedKeys["while"] = TokenWhile
+let reservedKeys: Table[string,TokenType] = {
+ "int": TokenIntType,
+ "bool": TokenBoolType,
+ "char": TokenCharType,
+ "true": TokenTrueKeyword,
+ "false": TokenFalseKeyword,
+ "if": TokenIf,
+ "else": TokenElse,
+ "while": TokenWhile
+}.toTable()
 
 type Token = object
-    tokenType: TokenType
-    value: int64
-    name: string
+    line: int
+    index: int
+    case tokenType: TokenType
+    of TokenIntValue: 
+        intVal: int
+    of TokenTrueKeyword,TokenFalseKeyword,TokenBoolValue: 
+        boolVal: bool
+    of TokenCharValue: 
+        charVal: char
+    of TokenIdentifier: 
+        name: string
+    else:
+        discard
 
-proc initToken(self: var Token, t: TokenType, value: int64) =
-    self.tokenType = t
-    self.value = value
+proc createToken(tp: TokenType, value: int, line,index:int): Token =
+    var tk = Token(tokenType: tp)
+    tk.intVal = value
+    tk.line = line
+    tk.index = index
+    result = tk
 
-proc initToken(self: var Token, t: TokenType, name: string) =
-    self.tokenType = t
-    self.name = name
+proc createToken(tp: TokenType, value: bool,line,index:int): Token = 
+    var tk = Token(tokenType: tp)
+    tk.boolVal = value
+    tk.line = line
+    tk.index = index
+    result = tk
 
-proc initToken(self: var Token, t: TokenType) =
-    self.tokenType = t
+proc createToken(tp: TokenType, value: char,line,index:int): Token = 
+    var tk = Token(tokenType: tp)
+    tk.charVal = value
+    tk.line = line
+    tk.index = index
+    result = tk
+
+proc createToken(tp: TokenType, name: string,line,index:int): Token = 
+    var tk = Token(tokenType: tp)
+    tk.name = name
+    tk.line = line
+    tk.index = index
+    result = tk
+
+proc createToken(tp: TokenType, line, index:int): Token = 
+    var tk = Token(tokenType: tp)
+    tk.line = line
+    tk.index = index
+    result = tk
+
+
 
 proc getType(self: Token): TokenType = self.tokenType
 
-proc getValue(self: Token): int64 = self.value
+proc getIntValue(self: Token): int = self.intVal
+proc getBoolValue(self: Token): bool = self.boolVal
+proc getCharValue(self: Token): char = self.charVal
 
 proc getIdentifier(self: Token): string = self.name
 
-proc getIdentifier(name: string): TokenType =
+proc getIdentifierType(name: string): TokenType =
     if reservedKeys.hasKey(name):
         result = reservedKeys[name]
     else:
         result = TokenIdentifier
 
 proc `$`(self: Token): string =
-    if self.tokenType == TokenIntValue:
-        result = &"[{self.tokenType}, {self.value}]"
-    elif self.tokenType == TokenIdentifier:
-        result = &"[{self.tokenType}, {self.name}]"
-    else:
-        result = &"[{self.tokenType}]"
+    case self.tokenType
+        of TokenIntValue:
+            result = &"[{self.tokenType}, {self.intVal}]"
+        of TokenBoolValue:
+            result = &"[{self.tokenType}, {self.boolVal}]"
+        of TokenCharValue:
+            result = &"[{self.tokenType}, {self.charVal}]"
+        of TokenIdentifier:
+            result = &"[{self.tokenType}, {self.name}]"
+        else:
+            result = &"[{self.tokenType}]"
 
-export Token,initToken,`$`,getType,getValue,getIdentifier,getIdentifier
+export Token,`$`,getType,getIntValue,getBoolValue,getCharValue,getIdentifier,getIdentifier,createToken,getIdentifierType

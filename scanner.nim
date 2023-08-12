@@ -1,13 +1,15 @@
 import system
 
 type Scanner = object
-    index: int64
+    index: int
+    line: int
     content: string
     done: bool
 
 proc createScanner(file : string): Scanner =
     result.content = readFile(file)
     result.index = 0
+    result.line = 0
     result.done = false
 
 proc nextChar(self: var Scanner):char =
@@ -27,6 +29,8 @@ proc skipWitheSpace(self: var Scanner) =
     while true:
         let c = self.nextChar()
         if ord(c) in {ord(' '), ord('\t'), ord('\n'), ord('\r')}:
+            if ord(c) == ord('\n'):
+                self.line += 1
             continue
         else:
             break
@@ -38,5 +42,8 @@ proc done(self: Scanner):bool =
     else:
         result = false
 
-export Scanner,createScanner,skipWitheSpace,nextChar,putBack,done
+proc getLine(self: Scanner): int = self.line
+proc getIndex(self: Scanner): int = self.index
+
+export Scanner,createScanner,skipWitheSpace,nextChar,putBack,done,getLine,getIndex
 
