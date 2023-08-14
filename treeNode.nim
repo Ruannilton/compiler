@@ -5,7 +5,6 @@ import symbolTable
 
 var nodeCounter : int = 0
 
-
 type TreeNode = ref object
     nodeId: int
     dataType: DataType = None
@@ -58,7 +57,7 @@ proc createNode(identifier: string): TreeNode =
     var node = TreeNode(nodeType: IdentifierNode)
     node.nodeId = newNodeId()
     node.id = getSymbolId(identifier)
-    node.dataType = getSymbolDataType(node.id)
+    node.dataType = getSymbol(node.id).getDataType()
     return node
 
 # single child node
@@ -146,7 +145,7 @@ proc generateDot(node: TreeNode, name:string) =
         of WhileNode:
             labelStr.add(&"\\n while right? left")
         of IdentifierNode:
-            labelStr.add(&"\\n {getSymbolName(node.id)}")
+            labelStr.add(&"\\n {getSymbol(node.id).getName()}")
         else:
             if nodeType.hasSymbol():
                 labelStr.add(&"\\n left {nodeType.getSymbol()} right")
