@@ -5,6 +5,30 @@ import treeNode
 import symbolTable
 import std/strformat
 
+proc getExpressionResultType(ltype:DataType, ntype:NodeType, rtype:DataType):DataType = 
+    
+    if not expressionToken(ntype.toTokenType()):
+        raise newException(OSError, &"Invalid expression token: {ntype}")
+    
+    case ntype
+        of IntNode: return Int
+        of CharNode: return Char
+        of BoolNode: return Bool
+        of  AddNode, SubtractNode, MultiplyNode, DivideNode:
+            if ltype == Bool or rtype == Bool: raise newException(OSError, &"Operation {ntype} betewn {ltype} and {rtype} is invalid")
+            elif ltype == rtype: return ltype
+            elif ltype == Int or rtype == Int: return Int
+            else: raise newException(OSError, &"Operation {ntype} betewn {ltype} and {rtype} is invalid")
+        of EqualsNode, NotEqualsNode:
+            if (ltype == Bool and rtype == Bool) or (ltype != Bool and rtype != Bool): return Bool
+            else: raise newException(OSError, &"Operation {ntype} betewn {ltype} and {rtype} is invalid")
+        of GreaterNode, LessNode, GreaterEqualsNode, LessEqualsNode:
+            if ltype == Bool or rtype == Bool: raise newException(OSError, &"Operation {ntype} betewn {ltype} and {rtype} is invalid")
+            elif ltype != Bool and rtype != Bool: return Bool
+            else: raise newException(OSError, &"Operation {ntype} betewn {ltype} and {rtype} is invalid")
+        else:
+            raise newException(OSError, &"Operation {ntype} betewn {ltype} and {rtype} is invalid")
+
 proc isNextToken(queue: TokenQueue, t: TokenType):bool = 
     var tk : Token = queue.peak()
     var tkType = tk.getType()
@@ -54,7 +78,9 @@ proc parseExpression(queue: var TokenQueue, precedence: int = 0): TreeNode =
         
         let ndType: NodeType = nextType.toNodeType()
         
-        lvalue = createNode(ndType,lvalue,rvalue)
+        let lType = getExpressionResultType(lvalue.getDataType(),ndType,rvalue.getDataType())
+
+        lvalue = createNode(ndType,lvalue,rvalue,lType)
 
         nextType = queue.peak().getType()
 
@@ -76,23 +102,29 @@ proc parseAssign(queue: var TokenQueue):TreeNode =
 
     let rvalue = parseExpression(queue,0)
 
+    if lvalue.getDataType() != rvalue.getDataType():
+        raise newException(OSError, &"Can't assign {rvalue.getDataType()} to {lvalue.getDataType()}")
+
     return createNode(AsignNode,rvalue,lvalue)
 
 proc parseDeclaration(queue: var TokenQueue):TreeNode =
     matchNextToken(queue,@[TokenIntType,TokenBoolType,TokenCharType])
-    discard queue.dequeue() # discard type
-
+    let typeDef = queue.dequeue().getType().getDataType() # discard type
+    
     let lvalue = queue.dequeue()
-    discard addSymbol(lvalue.getIdentifier())
+    discard addSymbol(lvalue.getIdentifier(),Variable,typeDef)
 
-    let next = queue.peak()
 
-    if next.getType() == TokenAssign:
+    if isNextToken(queue,TokenAssign):
         discard queue.dequeue()
         
         let rvalue = parseExpression(queue,0)
+        let lval = createNode(lvalue.getIdentifier())
 
-        return createNode(AsignNode,rvalue,createNode(lvalue))
+        if lval.getDataType() != rvalue.getDataType():
+            raise newException(OSError, &"Can't assign {rvalue.getDataType()} to {lval.getDataType()}")
+
+        return createNode(AsignNode,rvalue,lval)
     
     return nil
 

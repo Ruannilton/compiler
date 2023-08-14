@@ -8,6 +8,7 @@ var nodeCounter : int = 0
 
 type TreeNode = ref object
     nodeId: int
+    dataType: DataType = None
     case nodeType: NodeType
     of IntNode: 
         valueInt:  int
@@ -31,6 +32,7 @@ proc newNodeId():int =
 # int node
 proc createNode(value: int): TreeNode =
     var node = TreeNode(nodeType: IntNode)
+    node.dataType = Int
     node.nodeId = newNodeId()
     node.valueInt = value
     return node
@@ -38,6 +40,7 @@ proc createNode(value: int): TreeNode =
 # bool node
 proc createNode(value: bool): TreeNode =
     var node = TreeNode(nodeType: BoolNode)
+    node.dataType = Bool
     node.nodeId = newNodeId()
     node.valueBool = value
     return node
@@ -45,6 +48,7 @@ proc createNode(value: bool): TreeNode =
 # char node
 proc createNode(value: char): TreeNode =
     var node = TreeNode(nodeType: CharNode)
+    node.dataType = Char
     node.nodeId = newNodeId()
     node.valueChar = value
     return node
@@ -54,11 +58,13 @@ proc createNode(identifier: string): TreeNode =
     var node = TreeNode(nodeType: IdentifierNode)
     node.nodeId = newNodeId()
     node.id = getSymbolId(identifier)
+    node.dataType = getSymbolDataType(node.id)
     return node
 
 # single child node
-proc createNode(nodeType: NodeType, child:TreeNode): TreeNode =
+proc createNode(nodeType: NodeType, child:TreeNode,dataType: DataType = None): TreeNode =
     var node = TreeNode(nodeType: nodeType)
+    node.dataType = dataType
     node.child = child
     node.nodeId = newNodeId()
     return node
@@ -66,6 +72,7 @@ proc createNode(nodeType: NodeType, child:TreeNode): TreeNode =
 # if node
 proc createNode(expression, whenTrue, whenFalse:TreeNode): TreeNode =
     var node = TreeNode(nodeType: IfNode)
+    node.dataType = None
     node.nodeId = newNodeId()
     node.wTrue = whenTrue
     node.wFalse = whenFalse
@@ -73,8 +80,9 @@ proc createNode(expression, whenTrue, whenFalse:TreeNode): TreeNode =
     return node
 
 # default node
-proc createNode(nodeType: NodeType,rvalue, lvalue:TreeNode): TreeNode =
+proc createNode(nodeType: NodeType,rvalue, lvalue:TreeNode,dataType: DataType = None): TreeNode =
     var node = TreeNode(nodeType: nodeType)
+    node.dataType = dataType
     node.nodeId = newNodeId()
     node.left = lvalue
     node.right = rvalue
@@ -82,6 +90,7 @@ proc createNode(nodeType: NodeType,rvalue, lvalue:TreeNode): TreeNode =
 
 proc createGlueNode(first, second:TreeNode): TreeNode =
     var node = TreeNode(nodeType: GlueNode)
+    node.dataType = None
     node.nodeId = newNodeId()
     node.left = first
     node.right = second
@@ -119,11 +128,11 @@ proc generateDot(node: TreeNode, name:string) =
     else: return "white"
 
   proc traverse(node: TreeNode) =
-    
-   
     let nodeType = node.nodeType
 
     var labelStr = &"{nodeType}"
+
+    labelStr.add(&"\\nType: {node.dataType}")
 
     case nodeType
         of IntNode:
@@ -148,18 +157,21 @@ proc generateDot(node: TreeNode, name:string) =
     case nodeType:
         of IntNode,BoolNode,CharNode,IdentifierNode: discard
         of IfNode:
-            traverse(node.wTrue)
-            dotFile.write("  node", node.nodeId, " -> node", node.wTrue.nodeId, " [label=\"true\"];\n")
+            if node.wTrue != nil:
+                traverse(node.wTrue)
+                dotFile.write("  node", node.nodeId, " -> node", node.wTrue.nodeId, " [label=\"true\"];\n")
 
-            traverse(node.exp)
-            dotFile.write("  node", node.nodeId, " -> node", node.exp.nodeId, " [label=\"exp\"];\n")
+            if node.exp != nil:
+                traverse(node.exp)
+                dotFile.write("  node", node.nodeId, " -> node", node.exp.nodeId, " [label=\"exp\"];\n")
 
             if node.wFalse != nil:
                 traverse(node.wFalse)
                 dotFile.write("  node", node.nodeId, " -> node", node.wFalse.nodeId, " [label=\"false\"];\n")
         of CompoundNode,RootNode:
-            traverse(node.child)
-            dotFile.write("  node", node.nodeId, " -> node", node.child.nodeId, " [label=\"child\"];\n")
+            if node.child != nil:
+                traverse(node.child)
+                dotFile.write("  node", node.nodeId, " -> node", node.child.nodeId, " [label=\"child\"];\n")
         of GlueNode:
             if node.left != nil:
                 traverse(node.left)
@@ -179,4 +191,8 @@ proc generateDot(node: TreeNode, name:string) =
   dotFile.write("}\n")
   close(dotFile)
 
-export TreeNode,createNode,generateDot,createGlueNode
+proc getDataType(self: TreeNode):DataType = self.dataType
+proc setDataType(self: var TreeNode, dataType: DataType) = 
+    self.dataType = dataType
+
+export TreeNode,createNode,generateDot,createGlueNode,getDataType,setDataType

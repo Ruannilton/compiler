@@ -53,6 +53,17 @@ type NodeType = enum
     GlueNode
     IfNode
     WhileNode
+    CastNode
+
+type DataType = enum
+    None,
+    Void,
+    Int,
+    Char,
+    Bool
+
+type SymbolType = enum
+    Variable
 
 let mapTokenToNode: Table[TokenType,NodeType] = {
     TokenMinus: SubtractNode,
@@ -89,8 +100,6 @@ let mapNodeToToken: Table[NodeType, TokenType] = {
   IfNode: TokenIf,
   WhileNode: TokenWhile
 }.toTable()
-
-
 
 let opPrecedence: Table[NodeType,int] = {
     IntNode,IdentifierNode: 0,
@@ -171,4 +180,11 @@ proc hasSymbol(self: NodeType):bool =
     if not mapNodeToToken.hasKey(self): return false
     return opToString.hasKey(mapNodeToToken[self])
 
-export TokenType,NodeType,getPrecedence,expressionFinal,expressionToken,getSymbol,hasSymbol,toNodeType,toTokenType
+proc getDataType(self: TokenType): DataType = 
+    case self
+    of TokenIntType, TokenIntValue: return Int
+    of TokenBoolType, TokenBoolValue: return Bool
+    of TokenCharType, TokenCharValue: return Char
+    else: return None
+
+export TokenType,NodeType,DataType,SymbolType,getPrecedence,expressionFinal,expressionToken,getSymbol,hasSymbol,toNodeType,toTokenType,getDataType
