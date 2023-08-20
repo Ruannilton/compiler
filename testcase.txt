@@ -4,7 +4,7 @@ int teste;
 char tchar = 'A';
 
 while (true) {
-int value1 = 12 * 3;
+int value1 = 12 * tchar;
 value3 = 1 + 2 + teste - 5/2 + 3*5 * 7;
     
     if ( value3 > teste ) {

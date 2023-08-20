@@ -17,7 +17,7 @@ digraph Tree {
   node7 [label="IdentifierNode\nType: Int\n value1", style=filled, fillcolor=lightgreen];
   node8 -> node7 [label="left"];
   node6 [label="MultiplyNode\nType: Int\n left * right", style=filled, fillcolor=white];
-  node5 [label="IntNode\nType: Int\n 3", style=filled, fillcolor=lightblue];
+  node5 [label="IdentifierNode\nType: Char\n tchar", style=filled, fillcolor=lightgreen];
   node6 -> node5 [label="left"];
   node4 [label="IntNode\nType: Int\n 12", style=filled, fillcolor=lightblue];
   node6 -> node4 [label="right"];
