@@ -21,7 +21,7 @@ type TreeNode = ref object
         child: TreeNode
     of IfNode:
         wTrue, wFalse, exp: TreeNode
-    of FunctionNode:
+    of FunctionNode,FunctionCallNode:
         fnId: int
         fnBody: TreeNode
     else:
@@ -82,8 +82,8 @@ proc createNode(expression, whenTrue, whenFalse:TreeNode): TreeNode =
     return node
 
 # function node
-proc createNode(identifier: string, body:TreeNode):TreeNode = 
-    var node = TreeNode(nodeType: FunctionNode)
+proc createNode(identifier: string, body:TreeNode, nodeType: NodeType = FunctionNode):TreeNode = 
+    var node = TreeNode(nodeType: nodeType)
     node.nodeId = newNodeId()
     node.fnId = getSymbolId(identifier)
     node.dataType = getSymbol(node.fnId).getDataType()
@@ -159,7 +159,7 @@ proc generateDot(node: TreeNode, name:string) =
             labelStr.add(&"\\n while right? left")
         of IdentifierNode:
             labelStr.add(&"\\n {getSymbol(node.id).getName()}")
-        of FunctionNode:
+        of FunctionNode,FunctionCallNode:
             labelStr.add(&"\\n {getSymbol(node.fnId).getName()}")
         else:
             if nodeType.hasSymbol():
@@ -186,7 +186,7 @@ proc generateDot(node: TreeNode, name:string) =
             if node.child != nil:
                 traverse(node.child)
                 dotFile.write("  node", node.nodeId, " -> node", node.child.nodeId, " [label=\"child\"];\n")
-        of FunctionNode:
+        of FunctionNode,FunctionCallNode:
             if node.fnBody != nil:
                 traverse(node.fnBody)
                 dotFile.write("  node", node.nodeId, " -> node", node.fnBody.nodeId, " [label=\"body\"];\n")

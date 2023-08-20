@@ -32,8 +32,8 @@ proc getExpressionResultType(ltype:DataType, ntype:NodeType, rtype:DataType):Dat
         else:
             raise newException(OSError, &"Operation {ntype} betewn {ltype} and {rtype} is invalid")
 
-proc isNextToken(queue: TokenQueue, t: TokenType):bool = 
-    var tk : Token = queue.peak()
+proc isNextToken(queue: TokenQueue, t: TokenType, skip: int = 0):bool = 
+    var tk : Token = queue.peak(skip)
     var tkType = tk.getType()
     return tkType == t
 
@@ -51,7 +51,9 @@ proc matchNextToken(queue: TokenQueue, t: seq[TokenType]) =
     if not r:
         raise newException(OSError,&"{t} expected but got {tkType}")
 
-proc compoundStatement(queue: var TokenQueue): TreeNode
+proc compoundStatement(queue: var TokenQueue,fnId: int): TreeNode
+proc parseCallParamsList(queue: var TokenQueue): TreeNode
+proc parseFunctionCall(queue: var TokenQueue): TreeNode
 
 proc parseExpression(queue: var TokenQueue, precedence: int = 0): TreeNode =  
     
@@ -61,10 +63,19 @@ proc parseExpression(queue: var TokenQueue, precedence: int = 0): TreeNode =
     if not expressionToken(nextType):
         raise newException(OSError, &"Invalid expression token: {nextType}")
 
-    if tk.getType() == TokenIdentifier and not existSymbol(tk.getIdentifier()):
-        raise newException(OSError, &"Symbol not declared: {tk.getIdentifier()}")
+    var lvalue : TreeNode = nil
 
-    var lvalue : TreeNode = createNode(tk)
+    if tk.getType() == TokenIdentifier:
+        if not existSymbol(tk.getIdentifier()):
+            raise newException(OSError, &"Symbol not declared: {tk.getIdentifier()}")
+        elif isNextToken(queue, TokenLeftParen):
+            queue.putBack()
+            lvalue = parseFunctionCall(queue)
+        else:
+            lvalue = createNode(tk)
+    else:
+        lvalue = createNode(tk)
+
     nextType = queue.peak().getType()
 
     if expressionFinal(nextType):
@@ -103,7 +114,7 @@ proc parseAssign(queue: var TokenQueue):TreeNode =
     matchNextToken(queue,TokenAssign)
     discard queue.dequeue() # discard =
 
-    let rvalue = parseExpression(queue,0)
+    let rvalue = parseExpression(queue)
 
     if lvalue.getDataType() != rvalue.getDataType():
         raise newException(OSError, &"Can't assign {rvalue.getDataType()} to {lvalue.getDataType()}")
@@ -120,13 +131,38 @@ proc parseVariableDeclaration(varType: DataType, varIdentifier: Token, queue: va
 
     discard queue.dequeue() # discard =
     
-    let rvalue = parseExpression(queue,0)
+    let rvalue = parseExpression(queue)
     let lval = createNode(varIdentifier.getIdentifier())
 
     if lval.getDataType() != rvalue.getDataType():
         raise newException(OSError, &"Can't assign {rvalue.getDataType()} to {lval.getDataType()}")
 
     return createNode(AsignNode,rvalue,lval)
+
+proc parseCallParamsList(queue: var TokenQueue): TreeNode = 
+   
+
+    var lastNode: TreeNode = nil
+    var tmp: TreeNode
+    var tkType = queue.peak().getType()
+    
+    while tkType != TokenRightParen:
+        tmp = parseExpression(queue,0)
+        
+        if tmp != nil:
+            if lastNode != nil:
+                lastNode = createGlueNode(lastNode,tmp)
+            else:
+                lastNode = tmp
+
+        while isNextToken(queue,TokenComma):
+            discard queue.dequeue() # discard semicolon
+        
+        tkType = queue.peak().getType()
+
+   
+
+    return lastNode
 
 proc parseFunctionParams(queue: var TokenQueue) =
     
@@ -142,7 +178,7 @@ proc parseFunctionParams(queue: var TokenQueue) =
             discard queue.dequeue() # discard ,
 
 proc parseFunctionDeclaration(varType: DataType, varIdentifier: Token, queue: var TokenQueue): TreeNode =
-    discard addSymbol(varIdentifier.getIdentifier(),Function,varType)
+    let fnId = addSymbol(varIdentifier.getIdentifier(),Function,varType)
 
 
     matchNextToken(queue, TokenLeftParen)
@@ -150,12 +186,28 @@ proc parseFunctionDeclaration(varType: DataType, varIdentifier: Token, queue: va
 
     # parse function parameters
     parseFunctionParams(queue)
-    
+
     matchNextToken(queue, TokenRightParen)
     discard queue.dequeue()
     
-    let fnBody = compoundStatement(queue)
+    let fnBody = compoundStatement(queue,fnId)
     return createNode(varIdentifier.getIdentifier(),fnBody)
+
+proc parseFunctionCall(queue: var TokenQueue): TreeNode = 
+    let tk = queue.dequeue()
+
+    if not existSymbol(tk.getIdentifier()):
+        raise newException(OSError, &"Symbol not declared: {tk.getIdentifier()}")
+    
+    matchNextToken(queue,TokenLeftParen)
+    discard queue.dequeue() # discard (
+    
+    let fnBody: TreeNode = parseCallParamsList(queue)
+
+    matchNextToken(queue,TokenRightParen)
+    discard queue.dequeue() # discard )
+
+    return createNode(tk.getIdentifier(),fnBody, FunctionCallNode)
 
 proc parseDeclaration(queue: var TokenQueue):TreeNode =
     matchNextToken(queue,@[TokenIntType,TokenBoolType,TokenCharType,TokenVoidType])
@@ -173,7 +225,7 @@ proc parseDeclaration(queue: var TokenQueue):TreeNode =
 
     return nil
 
-proc parseIfStatement(queue: var TokenQueue): TreeNode =
+proc parseIfStatement(queue: var TokenQueue, fnId: int): TreeNode =
     matchNextToken(queue,TokenIf)
     discard queue.dequeue() # discard if
 
@@ -185,16 +237,16 @@ proc parseIfStatement(queue: var TokenQueue): TreeNode =
     matchNextToken(queue,TokenRightParen)
     discard queue.dequeue() # discard )
 
-    let whenTrue = compoundStatement(queue)
+    let whenTrue = compoundStatement(queue,fnId)
     var whenFalse: TreeNode = nil
 
     if isNextToken(queue,TokenElse):
         discard queue.dequeue() # discard else
-        whenFalse = compoundStatement(queue)
+        whenFalse = compoundStatement(queue,fnId)
 
     result = createNode(exp,whenTrue,whenFalse)
 
-proc parseWhileStatement(queue: var TokenQueue): TreeNode =
+proc parseWhileStatement(queue: var TokenQueue, fnId: int): TreeNode =
     matchNextToken(queue,TokenWhile)
     discard queue.dequeue() # discard if
 
@@ -206,31 +258,39 @@ proc parseWhileStatement(queue: var TokenQueue): TreeNode =
     matchNextToken(queue,TokenRightParen)
     discard queue.dequeue() # discard )
 
-    let whenTrue = compoundStatement(queue)
+    let whenTrue = compoundStatement(queue,fnId)
    
 
     result = createNode(WhileNode, exp, whenTrue)
 
-proc parseReturnStatement(queue: var TokenQueue): TreeNode =
+proc parseReturnStatement(queue: var TokenQueue, fnId :int): TreeNode =
     matchNextToken(queue,TokenReturn)
     discard queue.dequeue() # discard return
 
-    let exp = parseExpression(queue, 0)
+    let exp = parseExpression(queue)
     let dt = exp.getDataType()
+    
+    let symbolData = getSymbol(fnId)
+
+    if symbolData.getType() != Function:
+        raise newException(OSError,&"Can not return ouside a function")
+
     if dt == Void or dt == None:
         raise newException(OSError,&"return type can not be {dt}")
+    
+    if symbolData.getDataType() != dt:
+        raise newException(OSError,&"Can not return a {dt} to a {symbolData.getDataType()} function")
 
     return createNode(ReturnNode, exp, dt)
 
-proc parseStatement(queue: var TokenQueue): TreeNode =
+proc parseStatement(queue: var TokenQueue, fnId: int): TreeNode =
 
     let tk : Token = queue.peak()
-
     let tkType = tk.getType();
     
     case tkType
     of TokenLeftBrace:
-        return compoundStatement(queue)
+        return compoundStatement(queue, fnId)
 
     of TokenIntType,TokenBoolType,TokenCharType,TokenVoidType:
         let decl = parseDeclaration(queue)
@@ -239,35 +299,35 @@ proc parseStatement(queue: var TokenQueue): TreeNode =
             discard queue.dequeue() # discard semicolon
     
     of TokenIdentifier:
-        result = parseAssign(queue)
+        if isNextToken(queue, TokenAssign, 1):
+            result = parseAssign(queue)
+        elif isNextToken(queue, TokenLeftParen, 1):
+            result = parseFunctionCall(queue)
+        else:
+            raise newException(OSError,&"wrong program at {tk.getLine()}: {tk}, {queue.peak(1)}")
+
         matchNextToken(queue,TokenSemiColonKeyword)
         discard queue.dequeue() # discard semicolon
     of TokenIf:
-        result = parseIfStatement(queue)
+        result = parseIfStatement(queue,fnId)
     of TokenWhile:
-        result = parseWhileStatement(queue)
+        result = parseWhileStatement(queue,fnId)
     of TokenReturn:
-        result = parseReturnStatement(queue)
+        result = parseReturnStatement(queue, fnId)
     else:
         raise newException(OSError, &"wrong program at {tk.getLine()}: {tkType}")
 
-proc compoundStatement(queue: var TokenQueue): TreeNode = 
-    matchNextToken(queue,TokenLeftBrace)
-    discard queue.dequeue() # skip {
-    
+proc parseStatementList(queue: var TokenQueue, fnId: int): TreeNode = 
     var lastNode: TreeNode = nil
     var tmp: TreeNode
     var tkType = queue.peak().getType()
     
-    while tkType != TokenRightBrace:
-        
-        if tkType == TokenEOF:
-            raise newException(OSError, "Missing }")
-
+    while tkType != TokenRightBrace and tkType != TokenEOF:
+    
         if tkType == TokenLeftBrace:
-            tmp = compoundStatement(queue)
+            tmp = compoundStatement(queue,fnId)
         else:
-            tmp = parseStatement(queue)
+            tmp = parseStatement(queue, fnId)
         
         if tmp != nil:
             if lastNode != nil:
@@ -279,6 +339,13 @@ proc compoundStatement(queue: var TokenQueue): TreeNode =
             discard queue.dequeue() # discard semicolon
         
         tkType = queue.peak().getType()
+    return lastNode
+
+proc compoundStatement(queue: var TokenQueue, fnId: int): TreeNode = 
+    matchNextToken(queue,TokenLeftBrace)
+    discard queue.dequeue() # skip {
+    
+    let lastNode : TreeNode = parseStatementList(queue, fnId)
     
     matchNextToken(queue,TokenRightBrace)
     discard queue.dequeue() # skip }
@@ -286,32 +353,8 @@ proc compoundStatement(queue: var TokenQueue): TreeNode =
     return createNode(CompoundNode,lastNode)
 
 proc syntaxTree(queue: var TokenQueue): TreeNode =
-    var lastNode: TreeNode = nil
-    var tmp: TreeNode
-    var tkType = queue.peak().getType()
-    
-    while tkType != TokenEOF:
-        case tkType
-            of TokenLeftBrace:
-                tmp = compoundStatement(queue)
-            of TokenIf:
-                tmp = parseIfStatement(queue)
-            of TokenWhile:
-                tmp = parseWhileStatement(queue)
-            else:
-                tmp = parseStatement(queue)
-        
-        if tmp != nil:
-            if lastNode != nil:
-                lastNode = createGlueNode(lastNode,tmp)
-            else:
-                lastNode = tmp
 
-        while isNextToken(queue,TokenSemiColonKeyword):
-            discard queue.dequeue() # discard semicolon
-
-        tkType = queue.peak().getType()
-
+    let lastNode: TreeNode = parseStatementList(queue, 0)
 
     return createNode(RootNode,lastNode)
 

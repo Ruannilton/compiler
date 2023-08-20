@@ -20,10 +20,13 @@ proc dequeue(self: var TokenQueue): Token =
     else:
         raise newException(OSError,"Token queue is empty")
 
+proc putBack(self: var TokenQueue) =
+    if self.index > 0:
+        self.index -= 1
 
-proc peak(self: TokenQueue): Token =
+proc peak(self: TokenQueue, skip: int = 0): Token =
     if not self.empty():
-        return self.values[self.index]
+        return self.values[self.index + skip]
     else:
         raise newException(OSError,"Token queue is empty")
    
@@ -37,4 +40,4 @@ proc toFile(self: TokenQueue, name: string) =
 
     close(queueFile)
 
-export TokenQueue, initTokenQueue,enqueue,dequeue,peak,empty,toFile
+export TokenQueue, initTokenQueue,enqueue,dequeue,peak,empty,toFile,putBack

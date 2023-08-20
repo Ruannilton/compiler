@@ -59,6 +59,7 @@ type NodeType = enum
     CastNode
     FunctionNode
     ReturnNode
+    FunctionCallNode
 
 type DataType = enum
     None,
@@ -129,7 +130,7 @@ let opToString: Table[TokenType,string] = {
 }.toTable()
 
 proc expressionFinal(tp: TokenType):bool = 
-    return tp in [TokenSemiColonKeyword,TokenLeftParen,TokenRightParen]
+    return tp in [TokenSemiColonKeyword,TokenLeftParen,TokenRightParen,TokenComma]
 
 proc expressionToken(tp: TokenType):bool = 
     return tp in [
