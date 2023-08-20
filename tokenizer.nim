@@ -119,6 +119,8 @@ proc nextToken(scanner: var Scanner):Token =
                     result = createToken(TokenLessEquals,line,index)
                 else:
                     raise newException(OSError,"Token \'!\' is not valid")
+        of ',':
+            result = createToken(TokenComma,line,index)
         else:
             scanner.putBack()
 

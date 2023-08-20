@@ -128,13 +128,29 @@ proc parseVariableDeclaration(varType: DataType, varIdentifier: Token, queue: va
 
     return createNode(AsignNode,rvalue,lval)
 
+proc parseFunctionParams(queue: var TokenQueue) =
+    
+    while not isNextToken(queue, TokenRightParen):
+        let typeDef = queue.dequeue().getType().getDataType() # get type 
+        let identy = queue.dequeue() # get identifier
+        
+        discard addSymbol(identy.getIdentifier(),Variable,typeDef)
+
+        if not isNextToken(queue, TokenComma):
+            matchNextToken(queue, TokenRightParen)
+        else:
+            discard queue.dequeue() # discard ,
+
 proc parseFunctionDeclaration(varType: DataType, varIdentifier: Token, queue: var TokenQueue): TreeNode =
     discard addSymbol(varIdentifier.getIdentifier(),Function,varType)
 
-    # skip params for now
 
     matchNextToken(queue, TokenLeftParen)
     discard queue.dequeue()
+
+    # parse function parameters
+    parseFunctionParams(queue)
+    
     matchNextToken(queue, TokenRightParen)
     discard queue.dequeue()
     

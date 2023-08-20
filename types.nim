@@ -33,6 +33,7 @@ type TokenType = enum
     TokenCharType
     TokenVoidType
     TokenReturn
+    TokenComma
 
 type NodeType = enum
     RootNode

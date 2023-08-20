@@ -3,7 +3,8 @@ int value3;
 int teste;
 char tchar = 'A';
 
-int a(){
+int a(int a1, int a2){
+    a1 = a2 * 2;
     int c = 50;
     return c;
 }
