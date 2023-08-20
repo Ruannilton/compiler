@@ -47,7 +47,7 @@ digraph Tree {
   node33 [label="IdentifierNode\nType: Bool\n result", style=filled, fillcolor=lightgreen];
   node34 -> node33 [label="left"];
   node32 [label="LessNode\nType: Bool\n left < right", style=filled, fillcolor=white];
-  node31 [label="FunctionCallNode\nType: Int\n a", style=filled, fillcolor=white];
+  node31 [label="FunctionCallNode\nType: Int\n a", style=filled, fillcolor=deeppink1];
   node30 [label="GlueNode\nType: None", style=filled, fillcolor=white];
   node23 [label="GlueNode\nType: None", style=filled, fillcolor=white];
   node21 [label="AddNode\nType: Int\n left + right", style=filled, fillcolor=white];
@@ -59,7 +59,7 @@ digraph Tree {
   node22 [label="IntNode\nType: Int\n 5", style=filled, fillcolor=lightblue];
   node23 -> node22 [label="second"];
   node30 -> node23 [label="first"];
-  node29 [label="FunctionCallNode\nType: Int\n a", style=filled, fillcolor=white];
+  node29 [label="FunctionCallNode\nType: Int\n a", style=filled, fillcolor=deeppink1];
   node28 [label="GlueNode\nType: None", style=filled, fillcolor=white];
   node26 [label="GlueNode\nType: None", style=filled, fillcolor=white];
   node24 [label="IntNode\nType: Int\n 1", style=filled, fillcolor=lightblue];
@@ -88,7 +88,7 @@ digraph Tree {
   node87 [label="FunctionNode\nType: Void\n main", style=filled, fillcolor=gold];
   node86 [label="CompoundNode\nType: None", style=filled, fillcolor=lightpink];
   node85 [label="GlueNode\nType: None", style=filled, fillcolor=white];
-  node41 [label="FunctionCallNode\nType: Bool\n b", style=filled, fillcolor=white];
+  node41 [label="FunctionCallNode\nType: Bool\n b", style=filled, fillcolor=deeppink1];
   node85 -> node41 [label="first"];
   node84 [label="WhileNode\nType: None\n while right? left", style=filled, fillcolor=mediumorchid];
   node83 [label="CompoundNode\nType: None", style=filled, fillcolor=lightpink];

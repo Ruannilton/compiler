@@ -137,6 +137,7 @@ proc generateDot(node: TreeNode, name:string) =
     of BoolNode: return "lightsalmon"
     of FunctionNode: return "gold"
     of ReturnNode: return "firebrick1"
+    of FunctionCallNode: return "deeppink1"
     else: return "white"
 
   proc traverse(node: TreeNode) =
