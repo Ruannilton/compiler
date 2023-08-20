@@ -17,10 +17,13 @@ type TreeNode = ref object
         valueChar: char
     of IdentifierNode:
         id: int
-    of RootNode, CompoundNode:
+    of RootNode, CompoundNode, ReturnNode:
         child: TreeNode
     of IfNode:
         wTrue, wFalse, exp: TreeNode
+    of FunctionNode:
+        fnId: int
+        fnBody: TreeNode
     else:
         left, right: TreeNode
     
@@ -78,6 +81,15 @@ proc createNode(expression, whenTrue, whenFalse:TreeNode): TreeNode =
     node.exp = expression
     return node
 
+# function node
+proc createNode(identifier: string, body:TreeNode):TreeNode = 
+    var node = TreeNode(nodeType: FunctionNode)
+    node.nodeId = newNodeId()
+    node.fnId = getSymbolId(identifier)
+    node.dataType = getSymbol(node.fnId).getDataType()
+    node.fnBody = body
+    return node
+
 # default node
 proc createNode(nodeType: NodeType,rvalue, lvalue:TreeNode,dataType: DataType = None): TreeNode =
     var node = TreeNode(nodeType: nodeType)
@@ -121,9 +133,10 @@ proc generateDot(node: TreeNode, name:string) =
     of IntNode: return "lightblue"
     of IdentifierNode: return "lightgreen"
     of CompoundNode: return "lightpink"
-    of IfNode: return "mediumorchid"
-    of WhileNode: return "mediumorchid"
+    of WhileNode,IfNode: return "mediumorchid"
     of BoolNode: return "lightsalmon"
+    of FunctionNode: return "gold"
+    of ReturnNode: return "firebrick1"
     else: return "white"
 
   proc traverse(node: TreeNode) =
@@ -146,6 +159,8 @@ proc generateDot(node: TreeNode, name:string) =
             labelStr.add(&"\\n while right? left")
         of IdentifierNode:
             labelStr.add(&"\\n {getSymbol(node.id).getName()}")
+        of FunctionNode:
+            labelStr.add(&"\\n {getSymbol(node.fnId).getName()}")
         else:
             if nodeType.hasSymbol():
                 labelStr.add(&"\\n left {nodeType.getSymbol()} right")
@@ -167,10 +182,14 @@ proc generateDot(node: TreeNode, name:string) =
             if node.wFalse != nil:
                 traverse(node.wFalse)
                 dotFile.write("  node", node.nodeId, " -> node", node.wFalse.nodeId, " [label=\"false\"];\n")
-        of CompoundNode,RootNode:
+        of CompoundNode,RootNode,ReturnNode:
             if node.child != nil:
                 traverse(node.child)
                 dotFile.write("  node", node.nodeId, " -> node", node.child.nodeId, " [label=\"child\"];\n")
+        of FunctionNode:
+            if node.fnBody != nil:
+                traverse(node.fnBody)
+                dotFile.write("  node", node.nodeId, " -> node", node.fnBody.nodeId, " [label=\"body\"];\n")
         of GlueNode:
             if node.left != nil:
                 traverse(node.left)

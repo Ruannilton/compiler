@@ -127,12 +127,14 @@ proc nextToken(scanner: var Scanner):Token =
             elif isAlphaAscii(c) or c == '_':
                 result = parseKeyword(scanner)
             else:
+                echo c, line
                 raise newException(OSError,&"Failed to parse token at line {line} and position {index}")
 
 
 
 proc tokenize(scanner: var Scanner):TokenQueue = 
     var tks: TokenQueue
+    
 
     while not scanner.done():
         var tk: Token = nextToken(scanner)
@@ -141,7 +143,13 @@ proc tokenize(scanner: var Scanner):TokenQueue =
     
     let line = scanner.getLine()
     let index = scanner.getIndex()
-    tks.enqueue(createToken(TokenEOF,line,index))
+    let teof = createToken(TokenEOF,line,index)
+    tks.enqueue(teof)
+
+    
+
+    
+
     return tks
 
 export tokenize

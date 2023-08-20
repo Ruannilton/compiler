@@ -9,7 +9,7 @@ type Scanner = object
 proc createScanner(file : string): Scanner =
     result.content = readFile(file)
     result.index = 0
-    result.line = 0
+    result.line = 1
     result.done = false
 
 proc nextChar(self: var Scanner):char =

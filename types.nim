@@ -31,6 +31,8 @@ type TokenType = enum
     TokenIntType
     TokenBoolType
     TokenCharType
+    TokenVoidType
+    TokenReturn
 
 type NodeType = enum
     RootNode
@@ -54,6 +56,8 @@ type NodeType = enum
     IfNode
     WhileNode
     CastNode
+    FunctionNode
+    ReturnNode
 
 type DataType = enum
     None,
@@ -64,6 +68,7 @@ type DataType = enum
 
 type SymbolType = enum
     Variable
+    Function
 
 let mapTokenToNode: Table[TokenType,NodeType] = {
     TokenMinus: SubtractNode,
@@ -185,6 +190,7 @@ proc getDataType(self: TokenType): DataType =
     of TokenIntType, TokenIntValue: return Int
     of TokenBoolType, TokenBoolValue: return Bool
     of TokenCharType, TokenCharValue: return Char
+    of TokenVoidType: return Void
     else: return None
 
 export TokenType,NodeType,DataType,SymbolType,getPrecedence,expressionFinal,expressionToken,getSymbol,hasSymbol,toNodeType,toTokenType,getDataType

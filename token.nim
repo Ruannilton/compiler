@@ -1,4 +1,3 @@
-import std/strformat
 import std/tables
 import types
 
@@ -10,7 +9,9 @@ let reservedKeys: Table[string,TokenType] = {
  "false": TokenFalseKeyword,
  "if": TokenIf,
  "else": TokenElse,
- "while": TokenWhile
+ "while": TokenWhile,
+ "void": TokenVoidType,
+ "return": TokenReturn
 }.toTable()
 
 type Token = object
@@ -78,17 +79,19 @@ proc getIdentifierType(name: string): TokenType =
     else:
         result = TokenIdentifier
 
-proc `$`(self: Token): string =
-    case self.tokenType
-        of TokenIntValue:
-            result = &"[{self.tokenType}, {self.intVal}]"
-        of TokenBoolValue:
-            result = &"[{self.tokenType}, {self.boolVal}]"
-        of TokenCharValue:
-            result = &"[{self.tokenType}, {self.charVal}]"
-        of TokenIdentifier:
-            result = &"[{self.tokenType}, {self.name}]"
-        else:
-            result = &"[{self.tokenType}]"
+proc getLine(self: Token): int = self.line
 
-export Token,`$`,getType,getIntValue,getBoolValue,getCharValue,getIdentifier,getIdentifier,createToken,getIdentifierType
+# proc `$`(self: Token): string =
+#     case self.tokenType
+#         of TokenIntValue:
+#             result = &"[{self.tokenType}, {self.intVal}]"
+#         of TokenBoolValue:
+#             result = &"[{self.tokenType}, {self.boolVal}]"
+#         of TokenCharValue:
+#             result = &"[{self.tokenType}, {self.charVal}]"
+#         of TokenIdentifier:
+#             result = &"[{self.tokenType}, {self.name}]"
+#         else:
+#             result = &"[{self.tokenType}]"
+
+export Token,getType,getIntValue,getBoolValue,getCharValue,getIdentifier,getIdentifier,createToken,getIdentifierType,getLine

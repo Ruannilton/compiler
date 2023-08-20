@@ -1,4 +1,5 @@
 import token
+import std/strformat
 
 type TokenQueue = object 
     values : seq[Token]
@@ -27,6 +28,13 @@ proc peak(self: TokenQueue): Token =
         raise newException(OSError,"Token queue is empty")
    
 
+proc toFile(self: TokenQueue, name: string) = 
+    var queueFile: File
+    discard open(queueFile, "queue.txt", fmWrite)
 
+    for t in self.values:
+        queueFile.write(&"{t}\n")
 
-export TokenQueue, initTokenQueue,enqueue,dequeue,peak,empty
+    close(queueFile)
+
+export TokenQueue, initTokenQueue,enqueue,dequeue,peak,empty,toFile

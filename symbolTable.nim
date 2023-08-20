@@ -16,7 +16,6 @@ var symbolIndex: Table[string,int] = initTable[string,int]()
 var symbolTable: SymbolTable
 
 proc addSymbol(symbol: string, symbolType: SymbolType, dataType: DataType):int =
-    
     if not symbolIndex.hasKey(symbol):
         
         let idx = symbolTable.index

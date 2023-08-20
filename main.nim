@@ -4,9 +4,11 @@ import tokenQueue
 import ast
 import treeNode
 
-var sc : Scanner = createScanner("testcase.txt")
+
+var sc : Scanner = createScanner("testcase.c")
 
 var queue: TokenQueue = tokenize(sc)
+queue.toFile("queue.txt")
 
 echo "Tokenizer done"
 
