@@ -1,7 +1,7 @@
 
 # C Compiler
 
-Implementação de um compilador de C por motivos educacionais e passa tempo, o projeto também está sendo uma oportunidade para aprender a linguagem Nim.
+Implementação de um compilador de C por motivos educacionais e passa tempo, o projeto também está sendo uma oportunidade para aprender a linguagem [Nim](https://nim-lang.org/).
 
 
 
