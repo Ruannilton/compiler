@@ -33,7 +33,7 @@ proc peak(self: TokenQueue, skip: int = 0): Token =
 
 proc toFile(self: TokenQueue, name: string) = 
     var queueFile: File
-    discard open(queueFile, "queue.txt", fmWrite)
+    discard open(queueFile, name, fmWrite)
 
     for t in self.values:
         queueFile.write(&"{t}\n")

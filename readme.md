@@ -25,13 +25,7 @@ Entre no diretório do projeto
 Compilar e executar o programa
 
 ```bash
-  nim compile --run main.nim
-```
-
-Renderizar a imagem
-
-```bash
-  dot -Tsvg .\main.dot > graph.svg
+  .\run.bat
 ```
 
 

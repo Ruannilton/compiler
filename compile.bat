@@ -1,0 +1,1 @@
+nim compile src/main.nim 
